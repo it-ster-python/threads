@@ -6,7 +6,7 @@ from random import randint
 import signal
 
 
-PID_FILE = ""
+PID_FILE = "/var/run/demon/demon.pid"
 
 
 def demon():
@@ -40,8 +40,30 @@ def start_demon():
 def send_signal(args):
     pass
 
+def is_pid_file():
+    return False
+
+# def is_pid_dir():
+#     return False
 
 if __name__ == '__main__':
+    try:
+        try:
+            os.mkdir(os.path.join(*os.path.split(PID_FILE)[:-1]))
+            # arr = os.path.split(PID_FILE)
+            # arr2 = arr[:-1]
+            # path = os/path/join(*arr2)
+            # os.mkdir(path)
+        except PermissionError:
+            pass
+        except FileNotFoundError:
+            try:
+                makedirs(os.path.join(*os.path.split(PID_FILE)[:-1]))
+                except PermissionError:
+                    print("WTF!!!")
+                    os.exit(1)
+    except os.FileExistsError:
+        pass
     try:
         args = sys.argv[1:]
     except IndexError:
