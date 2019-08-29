@@ -4,9 +4,10 @@ import time
 from datetime import datetime
 from random import randint
 import signal
+import psutil
+# import multiprocessing as mp
 
-
-PID_FILE = "/var/run/demon/demon.pid"
+PID_FILE = "/var/run/step/demon/demon.pid"
 
 
 def demon():
@@ -17,7 +18,7 @@ def demon():
 
     signal.signal(signal.SIGUSR1, handler)
     signal.signal(signal.SIGUSR2, handler)
-    signal.signal(signal.SIGUSR3, handler)
+    # signal.signal(signal.SIGUSR3, handler)
 
     while True:
         try:
@@ -34,8 +35,21 @@ def demon():
 
 
 def start_demon():
-    pid = demon()
-
+    if os.path.isfile(PID_FILE):
+        with open(PID_FILE, "r") as pid_file:
+            pid = int(pid_file.readline())
+            for process in psutil.procecc_iter():
+                if process.pid == pid:
+                    print("Demon is working")
+                    return
+    pid = os.fork()
+    if pid:
+        with open(PID_FILE, "w") as pid_file:
+            pid_file.write(f"{pid}")
+        print("Demon was started")
+        print(f"Demon has pid: {pid}")
+    else:
+        demon()
 
 def send_signal(args):
     pass
@@ -48,25 +62,27 @@ def is_pid_file():
 
 if __name__ == '__main__':
     try:
-        try:
-            os.mkdir(os.path.join(*os.path.split(PID_FILE)[:-1]))
-            # arr = os.path.split(PID_FILE)
-            # arr2 = arr[:-1]
-            # path = os/path/join(*arr2)
-            # os.mkdir(path)
-        except PermissionError:
-            pass
-        except FileNotFoundError:
-            try:
-                makedirs(os.path.join(*os.path.split(PID_FILE)[:-1]))
-                except PermissionError:
-                    print("WTF!!!")
-                    os.exit(1)
-    except os.FileExistsError:
+        os.mkdir(os.path.join(*os.path.split(PID_FILE)[:-1]))
+        # arr = os.path.split(PID_FILE)
+        # arr2 = arr[:-1]
+        # path = os/path/join(*arr2)
+        # os.mkdir(path)
+    # except PermissionError:
+    #     password = input("Введите пароль")
+    #     command = f"mkdir {os.path.join(*os.path.split(PID_FILE)[:-1])}"
+    #     os.system(f"echo {password} | sudo -S {command}")
+    #     os.exit(1)
+    except FileNotFoundError:
         pass
-    try:
-        args = sys.argv[1:]
-    except IndexError:
-        start_demon()
-    else:
+        try:
+            os.makedirs(os.path.join(*os.path.split(PID_FILE)[:-1]))
+        except PermissionError:
+                print("WTF!!!")
+                os.exit(1)
+    except FileExistsError:
+        pass
+    args = sys.argv[1:]
+    if len(args):
         send_signal(args)
+    else:
+        start_demon()
